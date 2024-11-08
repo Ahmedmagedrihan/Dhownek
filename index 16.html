@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Racing Game with Gamepad</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      background-color: #87CEEB; /* Light sky blue background */
+      display: block;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    // Set up the canvas and game variables
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Game variables
+    let carX = canvas.width / 2;
+    let carY = canvas.height - 120;
+    let carSpeed = 0;
+    let carVelocity = 0;
+    let carWidth = 50;
+    let carHeight = 100;
+    let roadWidth = canvas.width / 3;
+    let opponentSpeed = 2;
+    let lapCount = 0;
+
+    // Opponents array (simple AI)
+    const opponents = [
+      { x: 200, y: 50, speed: opponentSpeed, color: "blue" },
+      { x: 400, y: 150, speed: opponentSpeed, color: "green" }
+    ];
+
+    // Road and grass textures
+    const roadColor = '#808080'; // Grey road
+    const grassColor = '#228B22'; // Green grass
+
+    // Draw the road and grass
+    function drawTrack() {
+      ctx.fillStyle = grassColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height); // Draw grass background
+      ctx.fillStyle = roadColor;
+      ctx.fillRect((canvas.width - roadWidth) / 2, 0, roadWidth, canvas.height); // Draw road
+    }
+
+    // Draw the car
+    function drawCar() {
+      ctx.fillStyle = 'red';
+      ctx.fillRect(carX, carY, carWidth, carHeight); // Draw car rectangle
+    }
+
+    // Draw the opponents
+    function drawOpponents() {
+      opponents.forEach(opponent => {
+        ctx.fillStyle = opponent.color;
+        ctx.fillRect(opponent.x, opponent.y, carWidth, carHeight); // Draw opponent car
+      });
+    }
+
+    // Move the car based on gamepad input
+    function moveCar() {
+      if (carSpeed > 0) {
+        carY -= carSpeed; // Move car forward based on speed
+      }
+
+      // Keep the car within the road bounds
+      if (carX < (canvas.width - roadWidth) / 2) carX = (canvas.width - roadWidth) / 2;
+      if (carX + carWidth > (canvas.width + roadWidth) / 2) carX = (canvas.width + roadWidth) / 2 - carWidth;
+    }
+
+    // Move the opponents (simple AI)
+    function moveOpponents() {
+      opponents.forEach(opponent => {
+        opponent.y += opponent.speed; // Opponents move down the screen (simulate racing)
+        if (opponent.y > canvas.height) {
+          opponent.y = -carHeight; // Respawn at the top after passing the screen
+          lapCount++; // Track lap completion
+        }
+      });
+    }
+
+    // Handle gamepad controls
+    function updateGamepad() {
+      const gamepads = navigator.getGamepads();
+      const gamepad = gamepads[0];
+
+      if (gamepad) {
+        // Handle left analog stick (directional controls)
+        const leftStickX = gamepad.axes[0]; // Left stick horizontal
+        const leftStickY = gamepad.axes[1]; // Left stick vertical
+        const rightTrigger = gamepad.buttons[5].value; // Right trigger (for acceleration)
+
+        // Steering control
+        carX += leftStickX * 10; // Steer the car left/right
+
+        // Forward motion
+        if (rightTrigger > 0.1) {
+          carSpeed = rightTrigger * 5; // Accelerate based on the trigger value
+        } else {
+          carSpeed = 0;
+        }
+      }
+    }
+
+    // Game loop
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+      drawTrack();
+      moveCar();
+      moveOpponents();
+      drawCar();
+      drawOpponents();
+      updateGamepad();
+      displayLapCount();
+      requestAnimationFrame(gameLoop); // Keep looping
+    }
+
+    // Display lap count and race status
+    function displayLapCount() {
+      ctx.fillStyle = 'black';
+      ctx.font = '20px Arial';
+      ctx.fillText('Laps Completed: ' + lapCount, 10, 30);
+    }
+
+    // Start the game loop
+    gameLoop();
+
+    // Detect gamepad connection
+    if (navigator.getGamepads) {
+      window.addEventListener("gamepadconnected", (event) => {
+        console.log("Gamepad connected!");
+      });
+      window.addEventListener("gamepaddisconnected", (event) => {
+        console.log("Gamepad disconnected.");
+      });
+    }
+  </script>
+</body>
+</html>
